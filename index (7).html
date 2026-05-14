@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🎉 第10回秋まつり 抽選番号</title>
+<link href="https://fonts.googleapis.com/css2?family=Kaisei+Decol:wght@400;700&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--red:#C0392B;--gold:#F39C12;--gold-light:#F7DC6F;--dark:#1a0a00;--cream:#FEF9EF;--indigo:#2C3E7A;--paper:#FDF6E3;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans JP',sans-serif;background:var(--dark);color:var(--cream);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:repeating-linear-gradient(45deg,transparent,transparent 10px,rgba(243,156,18,0.04) 10px,rgba(243,156,18,0.04) 11px),repeating-linear-gradient(-45deg,transparent,transparent 10px,rgba(243,156,18,0.04) 10px,rgba(243,156,18,0.04) 11px);pointer-events:none;z-index:0;}
+  .container{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 0 60px;}
+  header{background:linear-gradient(135deg,var(--red) 0%,#8B0000 100%);text-align:center;padding:28px 20px 24px;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(192,57,43,0.5);}
+  header::before{content:'🏮';position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:2.2rem;animation:swing 3s ease-in-out infinite;}
+  header::after{content:'🏮';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:2.2rem;animation:swing 3s ease-in-out infinite reverse;}
+  @keyframes swing{0%,100%{transform:translateY(-50%) rotate(-8deg)}50%{transform:translateY(-50%) rotate(8deg)}}
+  header h1{font-family:'Kaisei Decol',serif;font-size:1.8rem;font-weight:700;color:var(--gold-light);text-shadow:2px 2px 4px rgba(0,0,0,0.5);letter-spacing:0.05em;}
+  header p{font-size:0.78rem;color:rgba(255,255,255,0.85);margin-top:4px;letter-spacing:0.1em;}
+  section{margin:20px 14px 0;background:rgba(255,255,255,0.04);border:1px solid rgba(243,156,18,0.2);border-radius:12px;overflow:hidden;}
+  .section-title{background:linear-gradient(90deg,var(--indigo),#1a265a);padding:10px 16px;font-family:'Kaisei Decol',serif;font-size:1rem;color:var(--gold-light);letter-spacing:0.08em;display:flex;align-items:center;gap:8px;}
+  #lottery-box{padding:28px 20px;text-align:center;}
+  .status-waiting{display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .status-waiting p{font-size:0.9rem;color:rgba(255,255,255,0.7);line-height:1.7;}
+  #get-btn{background:linear-gradient(135deg,var(--gold) 0%,#E67E22 100%);color:var(--dark);border:none;border-radius:50px;padding:16px 40px;font-size:1.1rem;font-family:'Kaisei Decol',serif;font-weight:700;cursor:pointer;box-shadow:0 4px 18px rgba(243,156,18,0.4);transition:all 0.2s;letter-spacing:0.05em;}
+  #get-btn:active{transform:scale(0.96);}
+  #get-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  .number-reveal{animation:popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;}
+  @keyframes popIn{0%{transform:scale(0.5);opacity:0}100%{transform:scale(1);opacity:1}}
+  .ticket{background:var(--paper);color:var(--dark);border-radius:12px;padding:24px 20px;position:relative;border:2px dashed var(--gold);width:100%;}
+  .ticket::before{content:'抽選券';display:block;font-family:'Kaisei Decol',serif;font-size:0.8rem;color:var(--red);letter-spacing:0.2em;margin-bottom:8px;}
+  .ticket-number{font-family:'Kaisei Decol',serif;font-size:4.5rem;font-weight:700;color:var(--red);line-height:1;}
+  .ticket-number span{font-size:1.4rem;color:var(--dark);}
+  .ticket-note{font-size:0.75rem;color:#666;margin-top:10px;}
+  .ticket-stamp{position:absolute;top:12px;right:14px;font-size:2.2rem;opacity:0.15;transform:rotate(12deg);}
+  .already-got{font-size:0.82rem;color:rgba(255,255,255,0.55);margin-top:12px;}
+  .loading{display:flex;align-items:center;justify-content:center;gap:6px;padding:20px;color:rgba(255,255,255,0.6);}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:bounce 1.2s infinite;}
+  .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+  @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-10px)}}
+  .error-msg{background:rgba(192,57,43,0.2);border:1px solid var(--red);border-radius:8px;padding:12px 16px;font-size:0.85rem;color:#ffaaaa;text-align:center;}
+  .retry-btn{background:linear-gradient(135deg,var(--gold),#E67E22);color:var(--dark);border:none;border-radius:50px;padding:12px 30px;font-size:1rem;cursor:pointer;margin-top:12px;}
+  .schedule-list{padding:16px;display:flex;flex-direction:column;}
+  .schedule-item{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.07);position:relative;}
+  .schedule-item:last-child{border-bottom:none;}
+  .schedule-item.active{background:linear-gradient(90deg,rgba(243,156,18,0.1),transparent);border-radius:8px;}
+  .schedule-item.active::before{content:'▶ NOW';position:absolute;right:4px;top:12px;font-size:0.6rem;color:var(--gold);font-weight:700;animation:pulse 1.5s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .sch-time{font-family:'Kaisei Decol',serif;font-size:0.95rem;color:var(--gold);font-weight:700;padding-top:2px;}
+  .sch-title{font-size:0.92rem;font-weight:700;color:var(--cream);line-height:1.3;}
+  .sch-desc{font-size:0.75rem;color:rgba(255,255,255,0.55);margin-top:2px;line-height:1.4;}
+  footer{text-align:center;padding:30px 20px 10px;font-size:0.72rem;color:rgba(255,255,255,0.3);}
+  .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden;}
+  .confetti-piece{position:absolute;top:-20px;border-radius:2px;animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🎆 第10回　秋まつり 🎆</h1>
+    <p>大抽選会 &amp; イベントプログラム</p>
+  </header>
+  <section>
+    <div class="section-title">🎯 抽選番号をゲット</div>
+    <div id="lottery-box">
+      <div class="loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+    </div>
+  </section>
+  <section>
+    <div class="section-title">📋 本日のプログラム</div>
+    <div class="schedule-list" id="schedule-list"></div>
+  </section>
+</div>
+<div class="confetti-container" id="confetti-container"></div>
+<footer>© 秋まつり実行委員会</footer>
+<script>
+const SUPABASE_URL = 'https://agkieobfuqyazeqynpge.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_JQYlkck6_LYDMoJZFtw93A_Oqp6wH1Q';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== 毎年ここの数字を変えるだけでリセット =====
+const YEAR = '2025';
+const KEY = 'lottery_' + YEAR;
+const MAX_NUMBER = 9999;
+
+// ===== Cookie操作（QR読み直しでも消えにくい）=====
+function getCookie(name){
+  const match=document.cookie.match(new RegExp('(^| )'+name+'=([^;]+)'));
+  return match?decodeURIComponent(match[2]):null;
+}
+function setCookie(name,value){
+  const expires=new Date();
+  expires.setFullYear(expires.getFullYear()+1);
+  document.cookie=name+'='+encodeURIComponent(value)+';expires='+expires.toUTCString()+';path=/;SameSite=Lax';
+}
+
+// ===== デバイスID：CookieとlocalStorage両方に保存 =====
+function getOrCreateDeviceId(){
+  let id=getCookie(KEY+'_id')||localStorage.getItem(KEY+'_id');
+  if(!id){
+    id='dev_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);
+  }
+  setCookie(KEY+'_id',id);
+  try{localStorage.setItem(KEY+'_id',id);}catch(e){}
+  return id;
+}
+
+function saveNumber(num){
+  setCookie(KEY+'_num',String(num));
+  try{localStorage.setItem(KEY+'_num',String(num));}catch(e){}
+}
+
+function getSavedNumber(){
+  return getCookie(KEY+'_num')||localStorage.getItem(KEY+'_num');
+}
+
+// ===== タイムスケジュール（ここを編集） =====
+const SCHEDULE = [
+  {time:'10:00',title:'開会式・オープニング',desc:'実行委員長あいさつ',icon:'🎉'},
+  {time:'10:30',title:'ステージ①　和太鼓演奏',desc:'地元太鼓クラブによる迫力の演奏',icon:'🥁'},
+  {time:'11:30',title:'模擬店オープン',desc:'焼きそば・たこやき・かき氷など',icon:'🍡'},
+  {time:'13:00',title:'ステージ②　民謡・盆踊り',desc:'参加自由！浴衣でどうぞ',icon:'💃'},
+  {time:'14:30',title:'キッズゲームコーナー',desc:'スーパーボールすくい・輪投げ',icon:'🎯'},
+  {time:'15:30',title:'ステージ③　地元バンド演奏',desc:'ポップス・懐かしの名曲',icon:'🎸'},
+  {time:'17:00',title:'🎊 大抽選会',desc:'このページの番号で参加！',icon:'🎁'},
+  {time:'18:00',title:'フィナーレ・閉会式',desc:'お楽しみ花火（天候次第）',icon:'🎆'},
+];
+
+function renderWaiting(){
+  document.getElementById('lottery-box').innerHTML=`<div class="status-waiting"><p>ボタンを押して<br>あなたの抽選番号を取得してください</p><button id="get-btn" onclick="getLotteryNumber()">🎯 番号を取得する</button></div>`;
+}
+
+function renderNumber(num,isNew){
+  document.getElementById('lottery-box').innerHTML=`<div class="${isNew?'number-reveal':''}"><div class="ticket"><span class="ticket-stamp">🌸</span><div class="ticket-number"><span>No.</span>${String(num).padStart(4,'0')}</div><div class="ticket-note">抽選会にてこの番号をご確認ください</div></div><p class="already-got">この端末の番号は上記で登録済みです</p></div>`;
+  if(isNew)launchConfetti();
+}
+
+function renderError(msg){
+  document.getElementById('lottery-box').innerHTML=`<div class="error-msg">⚠️ ${msg}</div><br><button class="retry-btn" onclick="getLotteryNumber()">再試行</button>`;
+}
+
+async function getLotteryNumber(){
+  const btn=document.getElementById('get-btn');
+  if(btn)btn.disabled=true;
+  document.getElementById('lottery-box').innerHTML=`<div class="loading"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  const deviceId=getOrCreateDeviceId();
+  try{
+    // 必ずSupabaseで既存チェック（キャッシュを信用しない）
+    const{data:existing}=await db.from('lottery').select('number').eq('device_id',deviceId).maybeSingle();
+    if(existing){
+      saveNumber(existing.number);
+      renderNumber(existing.number,false);
+      return;
+    }
+    // 新規番号発行
+    const{data:numData,error:numError}=await db.rpc('get_next_lottery_number');
+    if(numError)throw numError;
+    const nextNumber=numData;
+    if(nextNumber>MAX_NUMBER){renderError('抽選番号が上限に達しました');return;}
+    const{error}=await db.from('lottery').insert({device_id:deviceId,number:nextNumber});
+    if(error){
+      if(error.code==='23505'){
+        const{data:retry}=await db.from('lottery').select('number').eq('device_id',deviceId).maybeSingle();
+        if(retry){saveNumber(retry.number);renderNumber(retry.number,false);return;}
+      }
+      throw error;
+    }
+    saveNumber(nextNumber);
+    renderNumber(nextNumber,true);
+  }catch(e){
+    console.error(e);
+    renderError('通信エラーが発生しました。<br>再試行してください。');
+  }
+}
+
+function renderSchedule(){
+  const now=new Date();
+  const nowMins=now.getHours()*60+now.getMinutes();
+  let activeIdx=-1;
+  for(let i=0;i<SCHEDULE.length;i++){
+    const[h,m]=SCHEDULE[i].time.split(':').map(Number);
+    const itemMins=h*60+m;
+    const nextMins=i+1<SCHEDULE.length?(()=>{const[nh,nm]=SCHEDULE[i+1].time.split(':').map(Number);return nh*60+nm;})():itemMins+90;
+    if(nowMins>=itemMins&&nowMins<nextMins)activeIdx=i;
+  }
+  document.getElementById('schedule-list').innerHTML=SCHEDULE.map((item,i)=>`<div class="schedule-item ${i===activeIdx?'active':''}"><div class="sch-time">${item.time}</div><div><div class="sch-title">${item.icon} ${item.title}</div><div class="sch-desc">${item.desc}</div></div></div>`).join('');
+}
+
+function launchConfetti(){
+  const colors=['#F39C12','#C0392B','#2C3E7A','#F7DC6F','#E74C3C','#3498DB'];
+  const container=document.getElementById('confetti-container');
+  for(let i=0;i<60;i++){
+    const piece=document.createElement('div');
+    piece.className='confetti-piece';
+    const size=6+Math.random()*8;
+    piece.style.cssText=`left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${1.5+Math.random()*2}s;animation-delay:${Math.random()*0.8}s;width:${size}px;height:${size}px;border-radius:${Math.random()>0.5?'50%':'2px'};`;
+    container.appendChild(piece);
+    piece.addEventListener('animationend',()=>piece.remove());
+  }
+}
+
+(function init(){
+  renderSchedule();
+  setInterval(renderSchedule,60000);
+  const deviceId=getOrCreateDeviceId();
+  const savedNum=getSavedNumber();
+  if(savedNum){
+    // キャッシュ表示しつつSupabaseで確認
+    renderNumber(savedNum,false);
+    db.from('lottery').select('number').eq('device_id',deviceId).maybeSingle().then(({data})=>{
+      if(data&&String(data.number)!==String(savedNum)){
+        saveNumber(data.number);
+        renderNumber(data.number,false);
+      }else if(!data){
+        // DBにない場合（リセット後）→ 取得ボタンを表示
+        renderWaiting();
+      }
+    });
+  }else{
+    renderWaiting();
+  }
+})();
+</script>
+</body>
+</html>
