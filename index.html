@@ -121,8 +121,8 @@ async function getLotteryNumber(){
   try{
     const{data:existing}=await db.from('lottery').select('number').eq('device_id',deviceId).maybeSingle();
     if(existing){localStorage.setItem(NUMBER_KEY,existing.number);renderNumber(existing.number,false);return;}
-    const{data:maxData}=await db.from('lottery').select('number').order('number',{ascending:false}).limit(1);
-    const nextNumber=(maxData&&maxData.length>0)?maxData[0].number+1:1;
+    const{data:numData,error:numError}=await db.rpc('get_next_lottery_number');
+    const nextNumber=numData;
     if(nextNumber>MAX_NUMBER){renderError('抽選番号が上限に達しました');return;}
     const{error}=await db.from('lottery').insert({device_id:deviceId,number:nextNumber});
     if(error){
