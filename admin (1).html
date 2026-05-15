@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面 - 抽選会</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body { font-family: sans-serif; background: #111; color: #eee; padding: 20px; max-width: 600px; margin: 0 auto; }
+  h1 { color: #F39C12; margin-bottom: 20px; }
+  .card { background: #1e1e1e; border: 1px solid #333; border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .stat { font-size: 3rem; font-weight: bold; color: #F39C12; }
+  .btn { border: none; padding: 14px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: bold; margin: 6px; }
+  .btn-gold { background: #F39C12; color: #000; }
+  .btn-red { background: #C0392B; color: #fff; }
+  .btn:active { opacity: 0.8; }
+  #auth-screen { max-width: 300px; margin: 100px auto; text-align: center; }
+  #auth-screen h2 { color: #F39C12; margin-bottom: 16px; }
+  input[type=password] { background: #2a2a2a; border: 1px solid #444; color: #eee; padding: 10px 14px; border-radius: 6px; font-size: 1rem; width: 100%; margin-bottom: 12px; }
+  #main { display: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 12px; }
+  th { background: #2a2a2a; padding: 8px 12px; text-align: left; color: #aaa; }
+  td { padding: 8px 12px; border-bottom: 1px solid #2a2a2a; }
+  .msg { padding: 10px; border-radius: 6px; margin-top: 10px; text-align: center; display: none; }
+  .msg.success { background: rgba(46,204,113,0.2); color: #2ecc71; display: block; }
+  .msg.error { background: rgba(192,57,43,0.2); color: #ff6b6b; display: block; }
+  .year-badge { display: inline-block; background: #2C3E7A; color: #F7DC6F; font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; margin-left: 10px; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <h2>🔐 管理者ログイン</h2>
+  <input type="password" id="pass-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter')checkPass()">
+  <button class="btn btn-gold" style="width:100%" onclick="checkPass()">ログイン</button>
+</div>
+
+<div id="main">
+  <h1>🎯 抽選会 管理画面 <span class="year-badge" id="year-badge">2025年</span></h1>
+
+  <div class="card">
+    <p style="color:#aaa;margin-bottom:8px">現在の発行数</p>
+    <div class="stat" id="total-count">-</div>
+    <p style="color:#555;font-size:0.8rem;margin-top:4px">最終更新: <span id="last-update">-</span></p>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-gold" onclick="loadData()">🔄 更新</button>
+    <button class="btn btn-red" onclick="resetConfirm()" style="float:right">⚠️ 全データリセット</button>
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:8px">発行済み一覧</h3>
+    <table>
+      <thead><tr><th>番号</th><th>取得日時</th></tr></thead>
+      <tbody id="data-table"><tr><td colspan="2" style="color:#aaa">読み込み中...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://agkieobfuqyazeqynpge.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_JQYlkck6_LYDMoJZFtw93A_Oqp6wH1Q';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== 毎年ここを変える =====
+const YEAR = '2025';
+const ADMIN_PASS = 'matsuri2025'; // ← パスワード変更可能
+
+function checkPass() {
+  const p = document.getElementById('pass-input').value;
+  if (p === ADMIN_PASS) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    document.getElementById('year-badge').textContent = YEAR + '年';
+    loadData();
+    setInterval(loadData, 30000);
+  } else {
+    alert('パスワードが違います');
+  }
+}
+
+async function loadData() {
+  const { data, error } = await db
+    .from('lottery')
+    .select('number, created_at, device_id')
+    .like('device_id', 'line_' + YEAR + '_%')
+    .order('number', { ascending: true });
+
+  if (error) { console.error(error); return; }
+
+  document.getElementById('total-count').textContent = (data ? data.length : 0) + ' 件';
+  document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ja-JP');
+
+  const tbody = document.getElementById('data-table');
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" style="color:#aaa">まだ発行なし</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(d => `
+    <tr>
+      <td><strong style="color:#F39C12">No.${String(d.number).padStart(4,'0')}</strong></td>
+      <td style="color:#888">${new Date(d.created_at).toLocaleString('ja-JP')}</td>
+    </tr>`).join('');
+}
+
+async function resetConfirm() {
+  if (!confirm('⚠️ ' + YEAR + '年のデータを全てリセットしますか？\nこの操作は元に戻せません！')) return;
+  if (!confirm('本当によろしいですか？')) return;
+
+  const { error } = await db
+    .from('lottery')
+    .delete()
+    .like('device_id', 'line_' + YEAR + '_%');
+
+  const msg = document.getElementById('msg');
+  if (error) {
+    msg.className = 'msg error';
+    msg.textContent = 'エラー: ' + error.message;
+  } else {
+    msg.className = 'msg success';
+    msg.textContent = '✅ リセット完了！番号は200番からスタートします';
+    loadData();
+  }
+  setTimeout(() => { msg.style.display = 'none'; }, 4000);
+}
+</script>
+</body>
+</html>
