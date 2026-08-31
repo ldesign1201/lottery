@@ -84,7 +84,7 @@ const LIFF_ID = '2010092425-mEIhz1AT';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== 毎年ここの数字を変えるだけでリセット =====
-const YEAR = '2025';
+const YEAR = '2026';
 const MAX_NUMBER = 9999;
 
 let lineUserId = null;
@@ -92,14 +92,15 @@ let lineUserName = null;
 
 // ===== タイムスケジュール（ここを編集） =====
 const SCHEDULE = [
-  {time:'10:00',title:'開会式・オープニング',desc:'実行委員長あいさつ',icon:'🎉'},
-  {time:'10:30',title:'ステージ①　和太鼓演奏',desc:'地元太鼓クラブによる迫力の演奏',icon:'🥁'},
-  {time:'11:30',title:'模擬店オープン',desc:'焼きそば・たこやき・かき氷など',icon:'🍡'},
-  {time:'13:00',title:'ステージ②　民謡・盆踊り',desc:'参加自由！浴衣でどうぞ',icon:'💃'},
-  {time:'14:30',title:'キッズゲームコーナー',desc:'スーパーボールすくい・輪投げ',icon:'🎯'},
-  {time:'15:30',title:'ステージ③　地元バンド演奏',desc:'ポップス・懐かしの名曲',icon:'🎸'},
-  {time:'17:00',title:'🎊 大抽選会',desc:'このページの番号で参加！',icon:'🎁'},
-  {time:'18:00',title:'フィナーレ・閉会式',desc:'お楽しみ花火（天候次第）',icon:'🎆'},
+  {time:'16:00',title:'開会式・オープニング',desc:'実行委員長あいさつ',icon:'🎉'},
+  {time:'16:20',title:'ステージ①　- YAYA -',desc:'大道芸パフォーマンス',icon:'🥁'},
+  {time:'16:50',title:'🎊 大抽選会①',desc:'豪華景品が当たる福引抽選',icon:'🍡'},
+  {time:'17:30',title:'ステージ②　- 歓韻 -',desc:'地元太鼓クラブによる迫力の演奏',icon:'💃'},
+  {time:'18:05',title:'🎊 大抽選会②',desc:'豪華景品が当たる福引抽選',icon:'🎯'},
+  {time:'18:45',title:'ステージ③　Poi Graphics',desc:'光のＬＥＤエンタメショー',icon:'🎸'},
+  {time:'19:20',title:'🎊 大抽選会③',desc:'豪華景品が当たる福引抽選',icon:'🎁'},
+  {time:'20:00',title:'打上花火',desc:'お楽しみの約1,200発の打上花火',icon:'🎆'},
+  {time:'20:25',title:'フィナーレ・閉会式',desc:'理事長あいさつ',icon:'🎆'},
 ];
 
 function renderWaiting(){
