@@ -101,7 +101,7 @@ async function loadData() {
   tbody.innerHTML = data.map(d => `
     <tr>
       <td><strong style="color:#F39C12">No.${String(d.number).padStart(4,'0')}</strong></td>
-      <td style="color:#888">${new Date(d.created_at).toLocaleString('ja-JP')}</td>
+      <td style="color:#888">${new Date(new Date(d.created_at).getTime() + 9*60*60*1000).toLocaleString('ja-JP')}</td>
     </tr>`).join('');
 }
 
