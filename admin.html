@@ -82,15 +82,23 @@ function checkPass() {
 }
 
 async function loadData() {
+  // 発行数：件数だけを取得（1000件の上限を受けません）
+  const { count, error: countError } = await db
+    .from('lottery')
+    .select('*', { count: 'exact', head: true })
+    .like('device_id', 'line_' + YEAR + '_%');
+  if (countError) { console.error(countError); return; }
+
+  // 一覧：新しい順に最新100件だけ
   const { data, error } = await db
     .from('lottery')
-    .select('number, created_at, device_id')
+    .select('number, created_at')
     .like('device_id', 'line_' + YEAR + '_%')
-    .order('number', { ascending: true });
-
+    .order('number', { ascending: false })
+    .limit(100);
   if (error) { console.error(error); return; }
 
-  document.getElementById('total-count').textContent = (data ? data.length : 0) + ' 件';
+  document.getElementById('total-count').textContent = (count ?? 0) + ' 件';
   document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ja-JP');
 
   const tbody = document.getElementById('data-table');
